@@ -1,0 +1,3 @@
+com\shopeasy\gateway\filter\AuthenticationFilter.class
+com\shopeasy\gateway\ApiGatewayApplication.class
+com\shopeasy\gateway\config\RedisConfig.class

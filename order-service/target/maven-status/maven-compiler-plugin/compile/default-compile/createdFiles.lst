@@ -1,0 +1,10 @@
+com\shopeasy\order\service\OrderService.class
+com\shopeasy\order\client\ProductServiceClient.class
+com\shopeasy\order\OrderServiceApplication.class
+com\shopeasy\order\controller\OrderController.class
+com\shopeasy\order\entity\OrderItem$OrderItemBuilder.class
+com\shopeasy\order\repository\OrderRepository.class
+com\shopeasy\order\entity\Order$OrderBuilder.class
+com\shopeasy\order\entity\Order.class
+com\shopeasy\order\entity\Order$OrderStatus.class
+com\shopeasy\order\entity\OrderItem.class

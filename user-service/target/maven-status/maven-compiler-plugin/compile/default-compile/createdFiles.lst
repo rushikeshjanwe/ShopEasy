@@ -1,0 +1,8 @@
+com\shopeasy\user\entity\Address$AddressBuilder.class
+com\shopeasy\user\entity\User$UserBuilder.class
+com\shopeasy\user\entity\Address.class
+com\shopeasy\user\repository\UserRepository.class
+com\shopeasy\user\service\UserService.class
+com\shopeasy\user\UserServiceApplication.class
+com\shopeasy\user\entity\User.class
+com\shopeasy\user\controller\UserController.class
