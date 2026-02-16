@@ -1,9 +1,0 @@
-com\shopeasy\product\entity\Category.class
-com\shopeasy\product\entity\Category$CategoryBuilder.class
-com\shopeasy\product\entity\Product$ProductBuilder.class
-com\shopeasy\product\entity\Product.class
-com\shopeasy\product\ProductServiceApplication.class
-com\shopeasy\product\controller\ProductController.class
-com\shopeasy\product\repository\CategoryRepository.class
-com\shopeasy\product\service\ProductService.class
-com\shopeasy\product\repository\ProductRepository.class
