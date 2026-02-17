@@ -1,0 +1,741 @@
+# 📚 Microservices Theory & Concepts Guide
+
+A comprehensive guide to understanding Microservices Architecture and all concepts used in the ShopEasy project.
+
+---
+
+## 📋 Table of Contents
+
+1. [Microservices Basics](#1-microservices-basics)
+2. [Service Discovery (Eureka)](#2-service-discovery-eureka)
+3. [API Gateway](#3-api-gateway)
+4. [Feign Client](#4-feign-client)
+5. [Config Server](#5-config-server)
+6. [Circuit Breaker (Resilience4j)](#6-circuit-breaker-resilience4j)
+7. [Saga Pattern](#7-saga-pattern)
+8. [Kafka Basics](#8-kafka-basics)
+9. [Observability](#9-observability)
+10. [Synchronous vs Asynchronous Communication](#10-synchronous-vs-asynchronous-communication)
+11. [Interview Questions](#11-interview-questions)
+
+---
+
+## 1. Microservices Basics
+
+### What are Microservices?
+
+Microservices is an architectural style where an application is built as a collection of small, independent services that:
+- Run in their own process
+- Communicate via lightweight protocols (HTTP/REST, messaging)
+- Are independently deployable
+- Are organized around business capabilities
+
+### Monolith vs Microservices
+
+```
+MONOLITHIC APPLICATION
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│   ┌─────────┬─────────┬─────────┬─────────┐   │
+│   │  User   │ Product │  Order  │ Payment │   │
+│   │ Module  │ Module  │ Module  │ Module  │   │
+│   └─────────┴─────────┴─────────┴─────────┘   │
+│                                                 │
+│              SINGLE DATABASE                    │
+│              SINGLE DEPLOYMENT                  │
+└─────────────────────────────────────────────────┘
+
+MICROSERVICES APPLICATION
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│   User   │  │ Product  │  │  Order   │  │ Payment  │
+│ Service  │  │ Service  │  │ Service  │  │ Service  │
+└────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘
+     │             │             │             │
+┌────▼─────┐  ┌────▼─────┐  ┌────▼─────┐  ┌────▼─────┐
+│  User DB │  │Product DB│  │ Order DB │  │Payment DB│
+└──────────┘  └──────────┘  └──────────┘  └──────────┘
+```
+
+### Advantages of Microservices
+
+| Advantage | Description |
+|-----------|-------------|
+| **Independent Deployment** | Deploy one service without affecting others |
+| **Technology Flexibility** | Use different languages/frameworks per service |
+| **Scalability** | Scale only the services that need it |
+| **Fault Isolation** | One service failure doesn't crash the entire system |
+| **Team Autonomy** | Small teams can own and maintain their services |
+| **Faster Development** | Parallel development by multiple teams |
+
+### Disadvantages of Microservices
+
+| Disadvantage | Description |
+|--------------|-------------|
+| **Complexity** | Distributed system is harder to manage |
+| **Network Latency** | Service-to-service calls add latency |
+| **Data Consistency** | Maintaining consistency across services is hard |
+| **Testing** | End-to-end testing is more complex |
+| **Monitoring** | Need specialized tools for observability |
+
+---
+
+## 2. Service Discovery (Eureka)
+
+### What is Service Discovery?
+
+Service Discovery is a mechanism that allows services to find and communicate with each other without hardcoding hostnames and ports.
+
+### Why Do We Need It?
+
+```
+WITHOUT SERVICE DISCOVERY (Hardcoded URLs):
+┌─────────────┐
+│ Order       │ → http://192.168.1.100:8081/products  ❌
+│ Service     │   (What if IP changes?)
+└─────────────┘
+
+WITH SERVICE DISCOVERY (Dynamic):
+┌─────────────┐         ┌─────────────┐
+│ Order       │ ──────► │   Eureka    │ → Returns: 192.168.1.100:8081 ✅
+│ Service     │  "Find  │   Server    │   (Always up-to-date)
+└─────────────┘  PRODUCT-SERVICE"
+```
+
+### How Eureka Works
+
+```
+                    ┌─────────────────────────┐
+                    │     EUREKA SERVER       │
+                    │                         │
+                    │  Registry:              │
+                    │  ┌───────────────────┐  │
+                    │  │ AUTH-SERVICE      │  │
+                    │  │ → 192.168.1.10    │  │
+                    │  │                   │  │
+                    │  │ PRODUCT-SERVICE   │  │
+                    │  │ → 192.168.1.11    │  │
+                    │  │ → 192.168.1.12    │  │
+                    │  │                   │  │
+                    │  │ ORDER-SERVICE     │  │
+                    │  │ → 192.168.1.13    │  │
+                    │  └───────────────────┘  │
+                    └───────────┬─────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌───────────────┐       ┌───────────────┐       ┌───────────────┐
+│ AUTH-SERVICE  │       │PRODUCT-SERVICE│       │ ORDER-SERVICE │
+│               │       │               │       │               │
+│ 1. Register   │       │ 1. Register   │       │ 1. Register   │
+│ 2. Heartbeat  │       │ 2. Heartbeat  │       │ 2. Heartbeat  │
+│    (30 sec)   │       │    (30 sec)   │       │    (30 sec)   │
+└───────────────┘       └───────────────┘       └───────────────┘
+```
+
+### Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Service Registration** | Service registers itself with Eureka on startup |
+| **Heartbeat** | Service sends heartbeat every 30 seconds |
+| **Service Discovery** | Client queries Eureka to find service instances |
+| **Self-Preservation** | Eureka doesn't remove instances during network issues |
+
+### Code Example
+
+```yaml
+# application.yml
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+```
+
+```java
+// Main Application
+@SpringBootApplication
+@EnableEurekaClient
+public class ProductServiceApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ProductServiceApplication.class, args);
+    }
+}
+```
+
+---
+
+## 3. API Gateway
+
+### What is API Gateway?
+
+API Gateway is a single entry point for all client requests. It handles:
+- Request routing
+- Authentication & Authorization
+- Rate limiting
+- Load balancing
+- Request/Response transformation
+
+### Why Do We Need It?
+
+```
+WITHOUT API GATEWAY:
+┌────────┐     ┌─────────────┐
+│        │────►│Auth Service │ http://auth.example.com
+│ Client │────►│Product Svc  │ http://product.example.com
+│        │────►│Order Service│ http://order.example.com
+└────────┘     └─────────────┘
+Problems: Multiple URLs, no central security, CORS issues
+
+WITH API GATEWAY:
+┌────────┐     ┌─────────────┐     ┌─────────────┐
+│        │     │             │────►│Auth Service │
+│ Client │────►│ API Gateway │────►│Product Svc  │
+│        │     │             │────►│Order Service│
+└────────┘     └─────────────┘     └─────────────┘
+               Single URL: api.example.com
+```
+
+### Gateway Responsibilities
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      API GATEWAY                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. ROUTING                                                 │
+│     /api/v1/products/** → PRODUCT-SERVICE                  │
+│     /api/v1/orders/**   → ORDER-SERVICE                    │
+│     /api/v1/auth/**     → AUTH-SERVICE                     │
+│                                                             │
+│  2. AUTHENTICATION                                          │
+│     • Validate JWT Token                                    │
+│     • Extract user claims                                   │
+│     • Reject unauthorized requests                          │
+│                                                             │
+│  3. LOAD BALANCING                                          │
+│     • Distribute requests across instances                  │
+│                                                             │
+│  4. CROSS-CUTTING CONCERNS                                  │
+│     • Logging                                               │
+│     • Rate limiting                                         │
+│     • CORS handling                                         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Code Example
+
+```yaml
+# application.yml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: product-service
+          uri: lb://PRODUCT-SERVICE  # lb = load balanced
+          predicates:
+            - Path=/api/v1/products/**
+          filters:
+            - AuthenticationFilter
+```
+
+---
+
+## 4. Feign Client
+
+### What is Feign Client?
+
+Feign is a declarative HTTP client that makes writing REST API clients easier. Instead of writing boilerplate code with RestTemplate, you define an interface and Feign handles the implementation.
+
+### Without Feign (RestTemplate)
+
+```java
+// Verbose and error-prone
+@Service
+public class OrderService {
+    private final RestTemplate restTemplate;
+    
+    public ProductDTO getProduct(Long id) {
+        String url = "http://PRODUCT-SERVICE/api/v1/products/" + id;
+        ResponseEntity<ApiResponse<ProductDTO>> response = 
+            restTemplate.exchange(
+                url, 
+                HttpMethod.GET, 
+                null,
+                new ParameterizedTypeReference<ApiResponse<ProductDTO>>() {}
+            );
+        return response.getBody().getData();
+    }
+}
+```
+
+### With Feign (Clean & Simple)
+
+```java
+// Define interface
+@FeignClient(name = "PRODUCT-SERVICE")
+public interface ProductClient {
+    
+    @GetMapping("/api/v1/products/{id}")
+    ApiResponse<ProductDTO> getProductById(@PathVariable Long id);
+}
+
+// Use it
+@Service
+public class OrderService {
+    private final ProductClient productClient;
+    
+    public ProductDTO getProduct(Long id) {
+        return productClient.getProductById(id).getData();
+    }
+}
+```
+
+### How Feign Works
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Order Service  │     │  Feign Client   │     │ Product Service │
+│                 │     │                 │     │                 │
+│ productClient   │────►│ Creates HTTP    │────►│ GET /products/1 │
+│ .getProductById │     │ request from    │     │                 │
+│ (1)             │     │ interface       │     │ Returns JSON    │
+│                 │◄────│ definition      │◄────│                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                    ┌─────────────────┐
+                    │ Eureka Server   │
+                    │ (Resolves       │
+                    │ PRODUCT-SERVICE │
+                    │ to IP:Port)     │
+                    └─────────────────┘
+```
+
+---
+
+## 5. Config Server
+
+### What is Config Server?
+
+Config Server provides centralized configuration management for all microservices. Instead of each service having its own configuration file, all configurations are stored in a central location (usually Git).
+
+### Why Do We Need It?
+
+```
+WITHOUT CONFIG SERVER:
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│  Auth Service   │  │ Product Service │  │  Order Service  │
+│  application.yml│  │  application.yml│  │  application.yml│
+│  DB_URL=...     │  │  DB_URL=...     │  │  DB_URL=...     │
+│  DB_PASS=...    │  │  DB_PASS=...    │  │  DB_PASS=...    │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+Problem: Change DB password = Edit ALL files, redeploy ALL services
+
+WITH CONFIG SERVER:
+                    ┌─────────────────────┐
+                    │    CONFIG SERVER    │
+                    │                     │
+                    │  Git Repository:    │
+                    │  ├─ application.yml │ ← Common config
+                    │  ├─ auth-service.yml│
+                    │  ├─ product-svc.yml │
+                    │  └─ order-svc.yml   │
+                    └──────────┬──────────┘
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+        ▼                      ▼                      ▼
+┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+│ Auth Service  │      │Product Service│      │ Order Service │
+│ Fetches config│      │ Fetches config│      │ Fetches config│
+│ on startup    │      │ on startup    │      │ on startup    │
+└───────────────┘      └───────────────┘      └───────────────┘
+
+Benefit: Change once, apply everywhere!
+```
+
+### Config Server Flow
+
+```
+1. Service starts
+2. Contacts Config Server: "Give me auth-service config"
+3. Config Server reads from Git/local files
+4. Returns configuration
+5. Service uses configuration
+```
+
+---
+
+## 6. Circuit Breaker (Resilience4j)
+
+### What is Circuit Breaker?
+
+Circuit Breaker is a design pattern that prevents cascading failures in distributed systems. When a service is failing, the circuit "opens" and returns fallback responses instead of waiting for timeouts.
+
+### Circuit Breaker States
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CIRCUIT BREAKER STATES                       │
+│                                                                 │
+│    ┌────────────┐         ┌────────────┐         ┌────────────┐ │
+│    │            │         │            │         │            │ │
+│    │   CLOSED   │────────►│    OPEN    │────────►│ HALF-OPEN  │ │
+│    │            │ Failure │            │ Timeout │            │ │
+│    │  (Normal)  │ threshold│ (Fail fast)│ expires │(Test calls)│ │
+│    │            │ reached │            │         │            │ │
+│    └─────▲──────┘         └────────────┘         └──────┬─────┘ │
+│          │                                              │       │
+│          │              Success                         │       │
+│          └──────────────────────────────────────────────┘       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+CLOSED: Normal operation, requests pass through
+OPEN: Failures exceeded threshold, requests fail fast
+HALF-OPEN: Test a few requests to check if service recovered
+```
+
+### Without Circuit Breaker
+
+```
+User Request → Order Service → Product Service (DOWN!)
+                    │
+                    ▼
+              Waits 30 seconds (timeout)
+                    │
+                    ▼
+              More requests pile up
+                    │
+                    ▼
+              Order Service runs out of threads
+                    │
+                    ▼
+              ORDER SERVICE CRASHES! 💥
+                    │
+                    ▼
+              ENTIRE SYSTEM DOWN!
+```
+
+### With Circuit Breaker
+
+```
+User Request → Order Service → Circuit Breaker → Product Service (DOWN!)
+                    │                │
+                    │                ▼
+                    │         Circuit OPENS
+                    │                │
+                    │                ▼
+                    │         Returns FALLBACK instantly
+                    │                │
+                    │◄───────────────┘
+                    │
+                    ▼
+              Order created with fallback data ✅
+              System continues working!
+```
+
+### Code Example
+
+```java
+@FeignClient(name = "PRODUCT-SERVICE", fallbackFactory = ProductClientFallbackFactory.class)
+public interface ProductClient {
+    @GetMapping("/api/v1/products/{id}")
+    ApiResponse<ProductDTO> getProductById(@PathVariable Long id);
+}
+
+@Component
+public class ProductClientFallbackFactory implements FallbackFactory<ProductClient> {
+    @Override
+    public ProductClient create(Throwable cause) {
+        return new ProductClient() {
+            @Override
+            public ApiResponse<ProductDTO> getProductById(Long id) {
+                // Return fallback response
+                ProductDTO fallback = ProductDTO.builder()
+                    .id(id)
+                    .name("Product Unavailable")
+                    .price(BigDecimal.ZERO)
+                    .build();
+                return ApiResponse.success(fallback);
+            }
+        };
+    }
+}
+```
+
+---
+
+## 7. Saga Pattern
+
+### What is Saga Pattern?
+
+Saga is a pattern for managing distributed transactions across multiple services. Since we can't use traditional ACID transactions across services, Saga ensures data consistency through a sequence of local transactions.
+
+### The Problem
+
+```
+Traditional Transaction (Monolith):
+BEGIN TRANSACTION
+  1. Create Order
+  2. Reduce Stock
+  3. Charge Payment
+COMMIT  ← All succeed or all rollback (EASY!)
+
+Microservices (Multiple Databases):
+Order Service → orderdb
+Product Service → productdb
+Payment Service → paymentdb
+
+Problem: How to rollback if Payment fails after Stock is reduced?
+```
+
+### Saga Types
+
+#### 1. Choreography (Event-Driven)
+
+Each service publishes events, and other services react to them. No central coordinator.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     CHOREOGRAPHY                                │
+│                                                                 │
+│   Order         Product        Payment        Notification      │
+│   Service       Service        Service        Service           │
+│      │              │              │              │              │
+│      │ OrderCreated │              │              │              │
+│      │─────────────►│              │              │              │
+│      │              │              │              │              │
+│      │              │ StockReserved│              │              │
+│      │              │─────────────►│              │              │
+│      │              │              │              │              │
+│      │              │              │ PaymentDone  │              │
+│      │              │              │─────────────►│              │
+│      │              │              │              │              │
+│      │◄─────────────┴──────────────┴──────────────│              │
+│      │              OrderCompleted                │              │
+│                                                                 │
+│   Pros: Loose coupling, no single point of failure              │
+│   Cons: Hard to track, debugging is difficult                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 2. Orchestration (Central Coordinator)
+
+A central Saga Orchestrator controls the flow and handles compensating transactions.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     ORCHESTRATION                               │
+│                                                                 │
+│                 ┌────────────────────┐                          │
+│                 │  SAGA ORCHESTRATOR │                          │
+│                 │                    │                          │
+│                 │  1. Create Order   │                          │
+│                 │  2. Reserve Stock  │                          │
+│                 │  3. Process Payment│                          │
+│                 │  4. Complete Order │                          │
+│                 └─────────┬──────────┘                          │
+│                           │                                     │
+│       ┌───────────────────┼───────────────────┐                │
+│       │                   │                   │                │
+│       ▼                   ▼                   ▼                │
+│  ┌──────────┐       ┌──────────┐       ┌──────────┐           │
+│  │  Order   │       │ Product  │       │ Payment  │           │
+│  │ Service  │       │ Service  │       │ Service  │           │
+│  └──────────┘       └──────────┘       └──────────┘           │
+│                                                                 │
+│   If Payment fails:                                             │
+│   Orchestrator calls Product.releaseStock()                     │
+│   Orchestrator calls Order.cancelOrder()                        │
+│                                                                 │
+│   Pros: Easy to track, centralized error handling               │
+│   Cons: Single point of failure, orchestrator complexity        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Kafka Basics
+
+### What is Kafka?
+
+Apache Kafka is a distributed event streaming platform capable of handling trillions of events per day. It's used for building real-time data pipelines and streaming applications.
+
+### RabbitMQ vs Kafka
+
+| Feature | RabbitMQ | Kafka |
+|---------|----------|-------|
+| **Type** | Message Broker | Event Streaming Platform |
+| **Pattern** | Push (broker sends to consumers) | Pull (consumers fetch) |
+| **Retention** | Messages deleted after consumed | Messages retained for configurable time |
+| **Throughput** | Thousands/second | Millions/second |
+| **Ordering** | Per queue | Per partition |
+| **Use Case** | Task queues, RPC | Event sourcing, logs, analytics |
+
+### Kafka Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       KAFKA CLUSTER                             │
+│                                                                 │
+│   TOPIC: orders                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │ Partition 0: [msg1] [msg4] [msg7] [msg10]               │  │
+│   │ Partition 1: [msg2] [msg5] [msg8] [msg11]               │  │
+│   │ Partition 2: [msg3] [msg6] [msg9] [msg12]               │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│   Producers ──────► Kafka ──────► Consumer Groups               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### When to Use Kafka
+
+- Event Sourcing
+- Log Aggregation
+- Real-time Analytics
+- Activity Tracking
+- Data Pipelines
+
+---
+
+## 9. Observability
+
+### Three Pillars of Observability
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     OBSERVABILITY                               │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │    LOGS      │  │   METRICS    │  │   TRACING    │          │
+│  │              │  │              │  │              │          │
+│  │ What happened│  │ How is it    │  │ Where did    │          │
+│  │ (events,     │  │ performing?  │  │ request go?  │          │
+│  │  errors)     │  │ (CPU, memory,│  │ (across      │          │
+│  │              │  │  latency)    │  │  services)   │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│         │                 │                 │                   │
+│         ▼                 ▼                 ▼                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │  ELK Stack   │  │ Prometheus + │  │   Jaeger /   │          │
+│  │  (Elastic,   │  │   Grafana    │  │   Zipkin     │          │
+│  │  Logstash,   │  │              │  │              │          │
+│  │  Kibana)     │  │              │  │              │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Distributed Tracing
+
+```
+One request travels through multiple services:
+
+User → Gateway → Order → Product → User → Payment
+         │         │        │        │        │
+     TraceID: abc-123 (same for entire journey)
+         │         │        │        │        │
+     SpanID:1  SpanID:2 SpanID:3 SpanID:4 SpanID:5
+
+In Jaeger/Zipkin UI, you see the entire journey and time spent!
+```
+
+---
+
+## 10. Synchronous vs Asynchronous Communication
+
+### Synchronous (REST/Feign)
+
+```
+┌─────────────┐        ┌─────────────┐
+│   Order     │ ─────► │  Product    │
+│   Service   │        │  Service    │
+│             │ ◄───── │             │
+│ WAITS for   │        │             │
+│ response    │        │             │
+└─────────────┘        └─────────────┘
+
+Use When:
+✅ Need immediate response
+✅ Simple request-response
+✅ Real-time data needed
+
+Example: Get product details for order
+```
+
+### Asynchronous (Kafka/RabbitMQ)
+
+```
+┌─────────────┐        ┌─────────────┐        ┌─────────────┐
+│   Order     │ ─────► │   Message   │ ─────► │  Product    │
+│   Service   │        │   Queue     │        │  Service    │
+│             │        │             │        │             │
+│ Continues   │        │             │        │ Processes   │
+│ immediately │        │             │        │ later       │
+└─────────────┘        └─────────────┘        └─────────────┘
+
+Use When:
+✅ Fire and forget
+✅ Long-running tasks
+✅ Decoupling needed
+✅ High throughput
+
+Example: Send notification email, generate report
+```
+
+---
+
+## 11. Interview Questions
+
+### Q1: What are microservices?
+**A:** Microservices is an architectural style where an application is built as a collection of small, independent services that run in their own process, communicate via lightweight protocols, and are independently deployable.
+
+### Q2: What is Service Discovery? Why is it needed?
+**A:** Service Discovery is a mechanism for services to find each other dynamically without hardcoding addresses. It's needed because in microservices, services can have multiple instances with dynamic IPs, especially in containerized environments.
+
+### Q3: What is the role of API Gateway?
+**A:** API Gateway is a single entry point for all clients. It handles routing, authentication, rate limiting, load balancing, and cross-cutting concerns like logging and CORS.
+
+### Q4: Explain Circuit Breaker pattern.
+**A:** Circuit Breaker prevents cascading failures by monitoring for failures. When failures exceed a threshold, it "opens" the circuit and returns fallback responses immediately instead of waiting for timeouts.
+
+### Q5: What is the difference between Choreography and Orchestration in Saga?
+**A:** In Choreography, services communicate via events without central control. In Orchestration, a central coordinator controls the transaction flow. Choreography is more decoupled but harder to track; Orchestration is easier to understand but creates a single point of failure.
+
+### Q6: Why use Feign Client over RestTemplate?
+**A:** Feign provides a declarative approach - you define an interface and Feign generates the implementation. It's cleaner, integrates with Eureka for service discovery, and supports circuit breakers.
+
+### Q7: What is Config Server?
+**A:** Config Server provides centralized configuration management. All services fetch their configuration from a central location, making it easy to manage environment-specific configs and change configurations without redeployment.
+
+### Q8: How do microservices handle distributed transactions?
+**A:** Using the Saga pattern - either Choreography (event-driven) or Orchestration (central coordinator). Each service performs local transactions and publishes events or the orchestrator coordinates compensating transactions for rollback.
+
+### Q9: What is the difference between Kafka and RabbitMQ?
+**A:** Kafka is an event streaming platform designed for high throughput and message retention. RabbitMQ is a traditional message broker designed for reliable message delivery. Kafka uses pull-based consumption; RabbitMQ uses push-based.
+
+### Q10: What is 12-Factor App?
+**A:** 12-Factor App is a methodology for building cloud-native applications. Key factors include: codebase in version control, explicit dependencies, config in environment, backing services as attached resources, separate build/run stages, stateless processes, and more.
+
+---
+
+## 📚 Additional Resources
+
+- [Spring Cloud Documentation](https://spring.io/projects/spring-cloud)
+- [Netflix OSS](https://netflix.github.io/)
+- [Resilience4j](https://resilience4j.readme.io/)
+- [Apache Kafka](https://kafka.apache.org/)
+- [12-Factor App](https://12factor.net/)
+
+---
+
+## 👨‍💻 Author
+
+**Rushikesh Janwe**
