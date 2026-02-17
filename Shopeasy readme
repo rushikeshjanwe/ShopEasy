@@ -1,0 +1,307 @@
+# 🛒 ShopEasy - Microservices E-Commerce Platform
+
+A complete e-commerce backend built using **Microservices Architecture** with Spring Boot, Spring Cloud, and Docker.
+
+---
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Technologies Used](#technologies-used)
+- [Services](#services)
+- [Getting Started](#getting-started)
+- [API Documentation](#api-documentation)
+- [Features](#features)
+- [Project Structure](#project-structure)
+
+---
+
+## 🎯 Overview
+
+ShopEasy is a microservices-based e-commerce platform demonstrating modern distributed system patterns. Instead of a monolithic application, the system is divided into independent, loosely-coupled services that communicate via REST APIs and service discovery.
+
+### Why Microservices?
+
+| Monolith Problems | Microservices Solutions |
+|-------------------|------------------------|
+| Single point of failure | Independent services - one failure doesn't crash all |
+| Hard to scale | Scale individual services based on demand |
+| Technology lock-in | Each service can use different tech stack |
+| Slow deployments | Deploy services independently |
+| Team bottlenecks | Teams own their services |
+
+---
+
+## 🏗️ Architecture
+
+```
+                                    ┌─────────────────────┐
+                                    │   EUREKA SERVER     │
+                                    │   (Discovery)       │
+                                    │   Port: 8761        │
+                                    └──────────┬──────────┘
+                                               │
+                              All services register here
+                                               │
+┌──────────────┐                    ┌──────────▼──────────┐
+│              │   HTTP Request     │                     │
+│    CLIENT    │ ─────────────────► │    API GATEWAY      │
+│   (Browser/  │                    │    Port: 8000       │
+│    Mobile)   │ ◄───────────────── │                     │
+│              │   HTTP Response    │  • JWT Auth         │
+└──────────────┘                    │  • Routing          │
+                                    │  • Load Balancing   │
+                                    └──────────┬──────────┘
+                                               │
+          ┌────────────────┬───────────────────┼───────────────────┬────────────────┐
+          │                │                   │                   │                │
+          ▼                ▼                   ▼                   ▼                ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  AUTH SERVICE   │ │ PRODUCT SERVICE │ │  USER SERVICE   │ │  ORDER SERVICE  │ │  CONFIG SERVER  │
+│  Port: 8085     │ │  Port: 8081     │ │  Port: 8082     │ │  Port: 8080     │ │  Port: 8888     │
+│                 │ │                 │ │                 │ │                 │ │                 │
+│ • Login         │ │ • Products CRUD │ │ • Users CRUD    │ │ • Orders CRUD   │ │ • Centralized   │
+│ • Register      │ │ • Categories    │ │ • Addresses     │ │ • Order Items   │ │   Configuration │
+│ • JWT Tokens    │ │ • Stock Mgmt    │ │                 │ │                 │ │                 │
+└────────┬────────┘ └────────┬────────┘ └────────┬────────┘ └────────┬────────┘ └─────────────────┘
+         │                   │                   │                   │
+         ▼                   ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│     authdb      │ │   productdb     │ │     userdb      │ │    orderdb      │
+│   (PostgreSQL)  │ │   (PostgreSQL)  │ │   (PostgreSQL)  │ │   (PostgreSQL)  │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+```
+
+---
+
+## 🔧 Technologies Used
+
+| Technology | Purpose |
+|------------|---------|
+| **Java 17** | Programming Language |
+| **Spring Boot 3.2** | Application Framework |
+| **Spring Cloud 2023.0.0** | Microservices Patterns |
+| **Netflix Eureka** | Service Discovery |
+| **Spring Cloud Gateway** | API Gateway |
+| **Spring Security + JWT** | Authentication & Authorization |
+| **OpenFeign** | Declarative REST Client |
+| **Resilience4j** | Circuit Breaker |
+| **PostgreSQL** | Database |
+| **Docker** | Containerization |
+| **Maven** | Build Tool |
+| **Lombok** | Reduce Boilerplate |
+
+---
+
+## 📦 Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **discovery-server** | 8761 | Eureka Server - Service Registry |
+| **config-server** | 8888 | Centralized Configuration |
+| **api-gateway** | 8000 | Single Entry Point, JWT Auth, Routing |
+| **auth-service** | 8085 | User Authentication (Login/Register) |
+| **product-service** | 8081 | Product & Category Management |
+| **user-service** | 8082 | User Profile & Address Management |
+| **order-service** | 8080 | Order Processing |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Java 17+
+- Maven 3.8+
+- PostgreSQL 15+
+- Docker & Docker Compose (optional)
+
+### Option 1: Run Locally
+
+#### Step 1: Create Databases
+
+```sql
+CREATE DATABASE authdb;
+CREATE DATABASE productdb;
+CREATE DATABASE userdb;
+CREATE DATABASE orderdb;
+```
+
+#### Step 2: Start Services (In Order)
+
+```bash
+# Terminal 1: Discovery Server (Start First - Wait 30 seconds)
+cd discovery-server && mvn spring-boot:run
+
+# Terminal 2: Config Server
+cd config-server && mvn spring-boot:run
+
+# Terminal 3: API Gateway
+cd api-gateway && mvn spring-boot:run
+
+# Terminal 4: Auth Service
+cd auth-service && mvn spring-boot:run
+
+# Terminal 5: Product Service
+cd product-service && mvn spring-boot:run
+
+# Terminal 6: User Service
+cd user-service && mvn spring-boot:run
+
+# Terminal 7: Order Service
+cd order-service && mvn spring-boot:run
+```
+
+### Option 2: Run with Docker
+
+```bash
+# Build all services
+mvn clean package -DskipTests
+
+# Start all containers
+docker-compose up --build
+
+# Stop all containers
+docker-compose down
+```
+
+### Verify Setup
+
+- **Eureka Dashboard:** http://localhost:8761
+- **Config Server:** http://localhost:8888/product-service/default
+- **API Gateway:** http://localhost:8000
+
+---
+
+## 📖 API Documentation
+
+### Base URL
+```
+http://localhost:8000/api/v1
+```
+
+### Authentication Endpoints (Public)
+
+#### Register User
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+    "email": "john@example.com",
+    "password": "password123",
+    "firstName": "John",
+    "lastName": "Doe"
+}
+```
+
+#### Login
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "john@example.com",
+    "password": "password123"
+}
+```
+
+---
+
+### Product Endpoints
+
+#### Get All Products (Public)
+```http
+GET /api/v1/products
+```
+
+#### Get Product by ID (Public)
+```http
+GET /api/v1/products/{id}
+```
+
+#### Create Product (Protected)
+```http
+POST /api/v1/products
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "name": "iPhone 15",
+    "description": "Latest iPhone",
+    "price": 999.99,
+    "stockQuantity": 100,
+    "categoryId": 1
+}
+```
+
+---
+
+### Order Endpoints (Protected)
+
+#### Create Order
+```http
+POST /api/v1/orders
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "userId": 1,
+    "shippingAddressId": 1,
+    "items": [
+        {"productId": 1, "quantity": 2}
+    ]
+}
+```
+
+#### Get All Orders
+```http
+GET /api/v1/orders
+Authorization: Bearer <token>
+```
+
+---
+
+## ✨ Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Service Discovery | ✅ | Eureka for automatic service registration |
+| API Gateway | ✅ | Single entry point with routing |
+| JWT Authentication | ✅ | Secure token-based auth |
+| Feign Client | ✅ | Declarative service communication |
+| Circuit Breaker | ✅ | Fault tolerance with Resilience4j |
+| Config Server | ✅ | Centralized configuration |
+| Docker Support | ✅ | Containerized deployment |
+| Database per Service | ✅ | Independent databases |
+
+---
+
+## 📁 Project Structure
+
+```
+ShopEasy/
+├── docker-compose.yml
+├── init-db.sql
+├── pom.xml
+├── README.md
+├── common-lib/
+├── discovery-server/
+├── config-server/
+├── api-gateway/
+├── auth-service/
+├── product-service/
+├── user-service/
+└── order-service/
+```
+
+---
+
+## 👨‍💻 Author
+
+**Rushikesh Janwe**
+
+## 📄 License
+
+This project is for educational purposes.
