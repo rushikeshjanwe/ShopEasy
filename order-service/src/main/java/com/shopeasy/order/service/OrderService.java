@@ -53,7 +53,7 @@ public class OrderService {
         Order order = Order.builder()
                 .orderNumber(generateOrderNumber())
                 .userId(request.getUserId())
-                .status(Order.OrderStatus.PENDING)
+                .status(Order.OrderStatus.CONFIRMED)
                 .items(new ArrayList<>())
                 .build();
 

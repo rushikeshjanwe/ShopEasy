@@ -1,0 +1,10 @@
+# Common configuration for all services
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
