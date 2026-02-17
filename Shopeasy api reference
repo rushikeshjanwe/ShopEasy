@@ -1,0 +1,662 @@
+# 📡 ShopEasy API Reference
+
+Complete API documentation for all endpoints in the ShopEasy Microservices Platform.
+
+---
+
+## 🔗 Base URL
+
+```
+http://localhost:8000/api/v1
+```
+
+---
+
+## 🔐 Authentication
+
+All protected endpoints require JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+---
+
+## 📑 Quick Reference
+
+| Service | Base Path | Auth Required |
+|---------|-----------|---------------|
+| Auth | `/api/v1/auth` | ❌ No |
+| Products | `/api/v1/products` | Partial |
+| Categories | `/api/v1/categories` | Partial |
+| Users | `/api/v1/users` | ✅ Yes |
+| Orders | `/api/v1/orders` | ✅ Yes |
+
+---
+
+## 1️⃣ Auth Service
+
+### Register User
+```http
+POST /api/v1/auth/register
+```
+
+**Request Body:**
+```json
+{
+    "email": "john@example.com",
+    "password": "password123",
+    "firstName": "John",
+    "lastName": "Doe"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+    "success": true,
+    "message": "User registered successfully",
+    "data": {
+        "id": 1,
+        "email": "john@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "role": "USER",
+        "createdAt": "2024-01-15T10:30:00"
+    }
+}
+```
+
+---
+
+### Login
+```http
+POST /api/v1/auth/login
+```
+
+**Request Body:**
+```json
+{
+    "email": "john@example.com",
+    "password": "password123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "success": true,
+    "message": "Login successful",
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "tokenType": "Bearer",
+        "expiresIn": 86400,
+        "user": {
+            "id": 1,
+            "email": "john@example.com",
+            "firstName": "John",
+            "lastName": "Doe"
+        }
+    }
+}
+```
+
+---
+
+### Validate Token
+```http
+GET /api/v1/auth/validate
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+    "success": true,
+    "message": "Token is valid",
+    "data": {
+        "userId": 1,
+        "email": "john@example.com",
+        "role": "USER"
+    }
+}
+```
+
+---
+
+## 2️⃣ Product Service
+
+### Get All Products (Public)
+```http
+GET /api/v1/products
+```
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| page | int | Page number (default: 0) |
+| size | int | Page size (default: 20) |
+| sort | string | Sort field (default: id) |
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "iPhone 15",
+            "description": "Latest Apple smartphone",
+            "price": 999.99,
+            "stockQuantity": 100,
+            "categoryId": 1,
+            "categoryName": "Electronics",
+            "imageUrl": "https://...",
+            "createdAt": "2024-01-10T08:00:00"
+        }
+    ],
+    "pageInfo": {
+        "page": 0,
+        "size": 20,
+        "totalElements": 50,
+        "totalPages": 3
+    }
+}
+```
+
+---
+
+### Get Product by ID (Public)
+```http
+GET /api/v1/products/{id}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "name": "iPhone 15",
+        "description": "Latest Apple smartphone",
+        "price": 999.99,
+        "stockQuantity": 100,
+        "categoryId": 1,
+        "categoryName": "Electronics"
+    }
+}
+```
+
+---
+
+### Search Products (Public)
+```http
+GET /api/v1/products/search?keyword=iphone
+```
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| keyword | string | Search term |
+
+---
+
+### Get Products by Category (Public)
+```http
+GET /api/v1/products/category/{categoryId}
+```
+
+---
+
+### Create Product (Protected)
+```http
+POST /api/v1/products
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "name": "Samsung Galaxy S24",
+    "description": "Latest Samsung flagship smartphone",
+    "price": 899.99,
+    "stockQuantity": 75,
+    "categoryId": 1,
+    "imageUrl": "https://example.com/samsung-s24.jpg"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+    "success": true,
+    "message": "Product created successfully",
+    "data": {
+        "id": 2,
+        "name": "Samsung Galaxy S24",
+        "price": 899.99,
+        "stockQuantity": 75
+    }
+}
+```
+
+---
+
+### Update Product (Protected)
+```http
+PUT /api/v1/products/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "name": "Samsung Galaxy S24 Ultra",
+    "price": 1199.99,
+    "stockQuantity": 50
+}
+```
+
+---
+
+### Delete Product (Protected)
+```http
+DELETE /api/v1/products/{id}
+Authorization: Bearer <token>
+```
+
+---
+
+### Update Stock (Protected)
+```http
+PUT /api/v1/products/{id}/stock?quantity=10
+Authorization: Bearer <token>
+```
+
+---
+
+## 3️⃣ Category Endpoints
+
+### Get All Categories (Public)
+```http
+GET /api/v1/categories
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Electronics",
+            "description": "Electronic devices and gadgets"
+        },
+        {
+            "id": 2,
+            "name": "Clothing",
+            "description": "Apparel and fashion"
+        }
+    ]
+}
+```
+
+---
+
+### Create Category (Protected)
+```http
+POST /api/v1/categories
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "name": "Electronics",
+    "description": "Electronic devices and gadgets"
+}
+```
+
+---
+
+## 4️⃣ User Service
+
+### Get All Users (Protected)
+```http
+GET /api/v1/users
+Authorization: Bearer <token>
+```
+
+---
+
+### Get User by ID (Protected)
+```http
+GET /api/v1/users/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "email": "john@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "1234567890",
+        "addresses": [
+            {
+                "id": 1,
+                "street": "123 Main St",
+                "city": "New York",
+                "state": "NY",
+                "zipCode": "10001",
+                "country": "USA",
+                "isDefault": true
+            }
+        ]
+    }
+}
+```
+
+---
+
+### Get User by Email (Protected)
+```http
+GET /api/v1/users/email/{email}
+Authorization: Bearer <token>
+```
+
+---
+
+### Update User (Protected)
+```http
+PUT /api/v1/users/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "firstName": "John",
+    "lastName": "Smith",
+    "phone": "9876543210"
+}
+```
+
+---
+
+### Add Address (Protected)
+```http
+POST /api/v1/users/{userId}/addresses
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "street": "456 Oak Avenue",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zipCode": "90001",
+    "country": "USA",
+    "isDefault": false
+}
+```
+
+---
+
+### Get User Addresses (Protected)
+```http
+GET /api/v1/users/{userId}/addresses
+Authorization: Bearer <token>
+```
+
+---
+
+### Update Address (Protected)
+```http
+PUT /api/v1/users/{userId}/addresses/{addressId}
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+---
+
+### Delete Address (Protected)
+```http
+DELETE /api/v1/users/{userId}/addresses/{addressId}
+Authorization: Bearer <token>
+```
+
+---
+
+## 5️⃣ Order Service
+
+### Create Order (Protected)
+```http
+POST /api/v1/orders
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "userId": 1,
+    "shippingAddressId": 1,
+    "items": [
+        {
+            "productId": 1,
+            "quantity": 2
+        },
+        {
+            "productId": 2,
+            "quantity": 1
+        }
+    ]
+}
+```
+
+**Response (201 Created):**
+```json
+{
+    "success": true,
+    "message": "Order created successfully",
+    "data": {
+        "id": 1,
+        "orderNumber": "ORD-1705312200000-ABCD",
+        "userId": 1,
+        "status": "CONFIRMED",
+        "totalAmount": 2899.97,
+        "shippingAddress": {
+            "street": "123 Main St",
+            "city": "New York"
+        },
+        "items": [
+            {
+                "id": 1,
+                "productId": 1,
+                "productName": "iPhone 15",
+                "quantity": 2,
+                "unitPrice": 999.99,
+                "totalPrice": 1999.98
+            },
+            {
+                "id": 2,
+                "productId": 2,
+                "productName": "Samsung Galaxy S24",
+                "quantity": 1,
+                "unitPrice": 899.99,
+                "totalPrice": 899.99
+            }
+        ],
+        "createdAt": "2024-01-15T12:30:00"
+    }
+}
+```
+
+---
+
+### Get All Orders (Protected)
+```http
+GET /api/v1/orders
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| page | int | Page number |
+| size | int | Page size |
+| status | string | Filter by status |
+
+---
+
+### Get Order by ID (Protected)
+```http
+GET /api/v1/orders/{id}
+Authorization: Bearer <token>
+```
+
+---
+
+### Get Order by Order Number (Protected)
+```http
+GET /api/v1/orders/number/{orderNumber}
+Authorization: Bearer <token>
+```
+
+---
+
+### Get Orders by User (Protected)
+```http
+GET /api/v1/orders/user/{userId}
+Authorization: Bearer <token>
+```
+
+---
+
+### Update Order Status (Protected)
+```http
+PUT /api/v1/orders/{id}/status?status=SHIPPED
+Authorization: Bearer <token>
+```
+
+**Valid Status Values:**
+- PENDING
+- CONFIRMED
+- PROCESSING
+- SHIPPED
+- DELIVERED
+- CANCELLED
+
+---
+
+### Cancel Order (Protected)
+```http
+PUT /api/v1/orders/{id}/cancel
+Authorization: Bearer <token>
+```
+
+---
+
+## 6️⃣ Health & Monitoring
+
+### Eureka Dashboard
+```http
+GET http://localhost:8761
+```
+
+### Config Server - Get Service Config
+```http
+GET http://localhost:8888/{service-name}/default
+```
+
+Examples:
+- `http://localhost:8888/product-service/default`
+- `http://localhost:8888/order-service/default`
+
+### Actuator Health
+```http
+GET http://localhost:8000/actuator/health
+```
+
+---
+
+## ❌ Error Responses
+
+### 400 Bad Request
+```json
+{
+    "success": false,
+    "message": "Validation failed",
+    "errors": [
+        "Email is required",
+        "Password must be at least 6 characters"
+    ]
+}
+```
+
+### 401 Unauthorized
+```json
+{
+    "success": false,
+    "message": "Invalid or expired token"
+}
+```
+
+### 403 Forbidden
+```json
+{
+    "success": false,
+    "message": "Access denied"
+}
+```
+
+### 404 Not Found
+```json
+{
+    "success": false,
+    "message": "Product not found with id: 999"
+}
+```
+
+### 500 Internal Server Error
+```json
+{
+    "success": false,
+    "message": "An unexpected error occurred"
+}
+```
+
+---
+
+## 🔄 Order Status Flow
+
+```
+PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
+    │         │           │           │
+    └─────────┴───────────┴───────────┴──────► CANCELLED
+```
+
+---
+
+## 📝 Notes
+
+1. **Token Expiry:** JWT tokens expire after 24 hours
+2. **Pagination:** Default page size is 20
+3. **Rate Limiting:** API Gateway may apply rate limits
+4. **Circuit Breaker:** If Product Service is down, orders still work with fallback data
+
+---
+
+## 👨‍💻 Author
+
+**Rushikesh Janwe**
