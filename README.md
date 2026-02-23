@@ -6,6 +6,7 @@ ShopEasy is a **simplified e-commerce backend** built using **Microservices Arch
 
 ---
 
+
 ## 🤔 Why Did We Build This?
 
 ### The Problem with Monolithic Applications:
