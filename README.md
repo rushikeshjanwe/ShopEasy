@@ -17,6 +17,7 @@ Imagine you have ONE big application that handles:
 - Payments
 - Notifications
 
+
 **Problems:**
 1. **One bug can crash everything** - A bug in payment code can bring down the entire app
 2. **Hard to scale** - If orders are getting high traffic, you can't scale just orders - you scale the ENTIRE app
