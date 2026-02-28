@@ -4,9 +4,6 @@
 
 ShopEasy is a **simplified e-commerce backend** built using **Microservices Architecture**. Instead of one big application (monolith), we split functionality into small, independent services that talk to each other.
 
-
-
-
 ---
 ## 🤔 Why Did We Build This?
 
